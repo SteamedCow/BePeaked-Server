@@ -1,11 +1,9 @@
 package bepeakedserver.session;
 
-import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Sessions
@@ -25,7 +23,7 @@ public class Sessions
     
     public static void updateSessionTimestamp(String id, long timestamp) {
         if(SESSIONS.containsKey(id))
-            SESSIONS.replace(id, timestamp);
+            SESSIONS.put(id, timestamp);
         else
             throw new NullPointerException("Session does not exsist");
     }

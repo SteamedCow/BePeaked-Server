@@ -19,7 +19,7 @@ public class BePeakedServer
         Thread server = new Thread(socketServer);
         server.start();
         
-        SessionHandler sessionHandler = new SessionHandler(60000, 900000);
+        SessionHandler sessionHandler = new SessionHandler(120000, 1800000);
         Thread sessionThread = new Thread(sessionHandler);
         sessionThread.setDaemon(true);
         sessionThread.start();

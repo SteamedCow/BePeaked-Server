@@ -13,8 +13,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import scSecurity.RandomGen;
@@ -277,7 +275,8 @@ public class ServerMultiplexer implements IMultiplexer
                 
                 HashMap<Integer, String> results = db.getWorkoutlist();
                 
-                JSONArray reply = new JSONArray();
+                JSONObject reply = new JSONObject();
+                JSONArray workoutlist = new JSONArray();
                 JSONObject jsonResult;
                 Map.Entry<Integer, String> workout;
                 for (Object obj : results.entrySet()) {
@@ -285,8 +284,9 @@ public class ServerMultiplexer implements IMultiplexer
                     jsonResult = new JSONObject();
                     jsonResult.put("id", workout.getKey());
                     jsonResult.put("name", workout.getValue());
-                    reply.add(jsonResult);
+                    workoutlist.add(jsonResult);
                 }
+                reply.put(TAG_WORKOUTLIST, workoutlist);
                 sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
             }
             else {
