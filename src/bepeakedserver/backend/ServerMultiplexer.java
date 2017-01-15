@@ -307,8 +307,9 @@ public class ServerMultiplexer implements IMultiplexer
                 
                 ArrayList<Exercise> results = db.getExerciseByWorkoutID(workoutID);
                 
+                JSONObject reply = new JSONObject();
+                JSONArray exercises = new JSONArray();
                 JSONObject jsonResult;
-                JSONArray reply = new JSONArray();
                 for (Exercise exercise : results) {
                     jsonResult = new JSONObject();
                     jsonResult.put("id", exercise.getExerciseID());
@@ -316,8 +317,9 @@ public class ServerMultiplexer implements IMultiplexer
                     jsonResult.put("description", exercise.getDescription());
                     jsonResult.put("imageID", exercise.getImageID());
                     jsonResult.put("sets", exercise.getSets());
-                    reply.add(jsonResult);
+                    exercises.add(jsonResult);
                 }
+                reply.put(TAG_EXERCISE, exercises);
                 sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
             }
             else {
