@@ -9,19 +9,20 @@ import java.util.Objects;
  */
 public class Exercise 
 {
-    private String exerciseName, description;
+    private String exerciseName, description, reps;
     private int exerciseID, imageID, sets;
 
     public Exercise(int exerciseID, String exerciseName, String description, int imageID) {
-        this(exerciseID, exerciseName, description, imageID, -1);
+        this(exerciseID, exerciseName, description, imageID, -1, null);
     }
 
-    public Exercise(int exerciseID, String exerciseName, String description, int imageID, int sets) {
+    public Exercise(int exerciseID, String exerciseName, String description, int imageID, int sets, String reps) {
         this.exerciseName = exerciseName;
         this.description = description;
         this.exerciseID = exerciseID;
         this.imageID = imageID;
         this.sets = sets;
+        this.reps = reps;
     }
 
     public String getExerciseName() {
@@ -62,6 +63,14 @@ public class Exercise
 
     public void setSets(int sets) {
         this.sets = sets;
+    }
+
+    public String getReps() {
+        return reps;
+    }
+
+    public void setReps(String reps) {
+        this.reps = reps;
     }
 
     @Override

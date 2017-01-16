@@ -4,7 +4,9 @@ import bepeakedserver.session.Sessions;
 import SocketServer.IMultiplexer;
 import SocketServer.TextTransfer;
 import bepeakedserver.backend.database.DBCommImpl;
+import bepeakedserver.backend.database.DBTags;
 import bepeakedserver.backend.database.MySQLFactory;
+import bepeakedserver.model.DietPlanProfile;
 import bepeakedserver.model.Exercise;
 import java.io.IOException;
 import java.net.ConnectException;
@@ -35,11 +37,14 @@ public class ServerMultiplexer implements IMultiplexer
     private static final String TAG_CMD_SESSION_ID = "session";
     private static final String TAG_ARGS = "args";
     private static final String TAG_USER = "user";
+    private static final String TAG_USER_TYPE = "us_type";
+    private static final String TAG_DIETPLAN = "us_dp";
     private static final String TAG_WORKOUTLIST = "workouts";
     private static final String TAG_PASSWORD = "password";
+    private static final String TAG_ACTIVATIONKEY = "activationkey";
     private static final String TAG_SALT = "salt";
-    private static final String TAG_RESULT = "result";
-    private static final String TAG_EXERCISE = "exercise";
+    private static final String TAG_EXERCISELIST = "exercise";
+    private static final String TAG_EXERCISE = "exerciseSingle";
     private static final String TAG_ERROR = "error";
     private static final String TAG_ERROR_NONE = "none";
     
@@ -80,6 +85,14 @@ public class ServerMultiplexer implements IMultiplexer
                         
                         System.out.println("MD5 Hash=" + md5Hash);
                         authenticateUser(socket, nickName, md5Hash);
+                        break;
+                    }
+                    case TAG_ACTIVATIONKEY: {
+                        String sessionID = (String) jsonObj.get(TAG_CMD_SESSION_ID);
+                        int userID = (int) (long) jsonArr.get(1);
+                        String activationKey = (String) jsonArr.get(2);
+                        
+                        authenticateActivationKey(socket, userID, activationKey, sessionID);
                         break;
                     }
                     default:
@@ -136,25 +149,38 @@ public class ServerMultiplexer implements IMultiplexer
                         getSalt(socket, userName);
                         break;
                     }
-//                    case TAG_RESULT: {
-//                        String sessionID = (String) jsonObj.get(TAG_CMD_SESSION_ID);
-//                        int userID = (int) (long) jsonArr.get(1);
-//                        int exerciseID = (int) (long) jsonArr.get(2);
-//                        
-//                        getResults(socket, userID, exerciseID);
-//                        break;
-//                    }
+                    case TAG_USER_TYPE: {
+                        String sessionID = (String) jsonObj.get(TAG_CMD_SESSION_ID);
+                        int userID = (int) (long) jsonArr.get(1);
+                        
+                        getUserType(socket, userID, sessionID);
+                        break;
+                    }
+                    case TAG_DIETPLAN: {
+                        String sessionID = (String) jsonObj.get(TAG_CMD_SESSION_ID);
+                        int userID = (int) (long) jsonArr.get(1);
+                        
+                        getDietplan(socket, userID, sessionID);
+                        break;
+                    }
                     case TAG_WORKOUTLIST: {
                         String sessionID = (String) jsonObj.get(TAG_CMD_SESSION_ID);
                         
                         getWorkoutList(socket, sessionID);
                         break;
                     }
-                    case TAG_EXERCISE: {
+                    case TAG_EXERCISELIST: {
                         String sessionID = (String) jsonObj.get(TAG_CMD_SESSION_ID);
                         int workoutID = (int) (long) jsonArr.get(1);
                         
                         getExercises(socket, workoutID, sessionID);
+                        break;
+                    }
+                    case TAG_EXERCISE: {
+                        String sessionID = (String) jsonObj.get(TAG_CMD_SESSION_ID);
+                        int exerciseID = (int) (long) jsonArr.get(1);
+                        
+                        getExercise(socket, exerciseID, sessionID);
                         break;
                     }
                     default:
@@ -168,20 +194,47 @@ public class ServerMultiplexer implements IMultiplexer
     private void authenticateUser(Socket socket, String nickName, String passHash) {
         DBCommImpl db = new DBCommImpl(new MySQLFactory(BackendData.DB_URL, BackendData.DB_SCHEMA, BackendData.DB_USERNAME, BackendData.DB_PASSWORD));
         try {
-            boolean success = db.authenticateUser(nickName, passHash);
+            int userID = db.authenticateUser(nickName, passHash);
             JSONObject reply = new JSONObject();
             
-            if(success) {
+            if(userID != -1) {
                 String sessionID = RandomGen.getSalt(16);
                 Sessions.addSession(sessionID, new Date().getTime());
                 
                 reply.put(TAG_ERROR, TAG_ERROR_NONE);
                 reply.put(TAG_CMD_SESSION_ID, sessionID);
+                reply.put(TAG_USER, userID);
             }
             else
                 reply.put(TAG_ERROR, "Username and password does not match");
             
             sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
+        } catch (ConnectException e) {
+            e.printStackTrace();
+            JSONObject reply = new JSONObject();
+            
+            reply.put(TAG_ERROR, e);
+            
+            sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
+        }
+    }
+
+    private void authenticateActivationKey(Socket socket, int userID, String activationKey, String sessionID) {
+        DBCommImpl db = new DBCommImpl(new MySQLFactory(BackendData.DB_URL, BackendData.DB_SCHEMA, BackendData.DB_USERNAME, BackendData.DB_PASSWORD));
+        try {
+            if(Sessions.containsSession(sessionID)) {
+                Sessions.updateSessionTimestamp(sessionID, new Date().getTime());
+                
+                int result = db.authenticateActivationKey(userID, activationKey);
+                JSONObject reply = new JSONObject();
+                
+                if(result != -1)
+                    reply.put(TAG_ERROR, TAG_ERROR_NONE);
+                else
+                    reply.put(TAG_ERROR, "Activation key does not exsist for the given user");
+                
+                sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
+            }
         } catch (ConnectException e) {
             e.printStackTrace();
             JSONObject reply = new JSONObject();
@@ -244,28 +297,45 @@ public class ServerMultiplexer implements IMultiplexer
             e.printStackTrace();
         }
     }
-    
-//    private void getResults(Socket socket, int userID, int exerciseID) {
-//        DBCommImpl db = new DBCommImpl(new MySQLFactory(BackendData.DB_URL, BackendData.DB_SCHEMA, BackendData.DB_USERNAME, BackendData.DB_PASSWORD));
-//        try {
-//            ArrayList<Result> results = db.getResults(userID, exerciseID);
-//            JSONArray reply = new JSONArray();
-//            
-//            JSONObject jsonResult;
-//            for (Result result : results) {
-//                jsonResult = new JSONObject();
-//                jsonResult.put("exerciseID", result.getExerciseID());
-//                jsonResult.put("reps", result.getReps());
-//                jsonResult.put("weight", result.getWeight());
-//                jsonResult.put("date", result.getDate());
-//                reply.add(jsonResult);
-//            }
-//            
-//            sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
-//        } catch (ConnectException e) {
-//            e.printStackTrace();
-//        }
-//    }
+
+    private void getUserType(Socket socket, int userID, String sessionID) {
+        DBCommImpl db = new DBCommImpl(new MySQLFactory(BackendData.DB_URL, BackendData.DB_SCHEMA, BackendData.DB_USERNAME, BackendData.DB_PASSWORD));
+        try {
+            if(Sessions.containsSession(sessionID)) {
+                Sessions.updateSessionTimestamp(sessionID, new Date().getTime());
+                
+                int userType = db.getUserType(userID);
+                JSONObject reply = new JSONObject();
+                
+                reply.put(TAG_USER_TYPE, userType);
+                
+                sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
+            }
+        } catch (ConnectException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void getDietplan(Socket socket, int userID, String sessionID) {
+        DBCommImpl db = new DBCommImpl(new MySQLFactory(BackendData.DB_URL, BackendData.DB_SCHEMA, BackendData.DB_USERNAME, BackendData.DB_PASSWORD));
+        try {
+            if(Sessions.containsSession(sessionID)) {
+                Sessions.updateSessionTimestamp(sessionID, new Date().getTime());
+                
+                DietPlanProfile dietplan = db.getDietPlanProfile(userID);
+                JSONObject reply = new JSONObject();
+                
+                reply.put(DBTags.DIETPLAN_PROT, dietplan.getProtein());
+                reply.put(DBTags.DIETPLAN_CAL, dietplan.getCalories());
+                reply.put(DBTags.DIETPLAN_CUL, dietplan.getCulhydrates());
+                reply.put(DBTags.DIETPLAN_FAT, dietplan.getFat());
+                
+                sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
+            }
+        } catch (ConnectException e) {
+            e.printStackTrace();
+        }
+    }
 
     private void getWorkoutList(Socket socket, String sessionID) {
         DBCommImpl db = new DBCommImpl(new MySQLFactory(BackendData.DB_URL, BackendData.DB_SCHEMA, BackendData.DB_USERNAME, BackendData.DB_PASSWORD));
@@ -317,9 +387,40 @@ public class ServerMultiplexer implements IMultiplexer
                     jsonResult.put("description", exercise.getDescription());
                     jsonResult.put("imageID", exercise.getImageID());
                     jsonResult.put("sets", exercise.getSets());
+                    jsonResult.put(DBTags.WORKOUT_REPS, exercise.getReps());
                     exercises.add(jsonResult);
                 }
-                reply.put(TAG_EXERCISE, exercises);
+                reply.put(TAG_EXERCISELIST, exercises);
+                sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
+            }
+            else {
+                JSONObject reply = new JSONObject();
+                reply.put(TAG_ERROR, "Invalid session id");
+                sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
+            }
+        } catch (ConnectException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private void getExercise(Socket socket, int exerciseID, String sessionID) {
+        DBCommImpl db = new DBCommImpl(new MySQLFactory(BackendData.DB_URL, BackendData.DB_SCHEMA, BackendData.DB_USERNAME, BackendData.DB_PASSWORD));
+        try {
+            if(Sessions.containsSession(sessionID)) {
+                Sessions.updateSessionTimestamp(sessionID, new Date().getTime());
+                
+                JSONObject reply = new JSONObject();
+                Exercise result = db.getExercise(exerciseID);
+                if(result != null) {
+                    reply.put("id", result.getExerciseID());
+                    reply.put("name", result.getExerciseName());
+                    reply.put("description", result.getDescription());
+                    reply.put("imageID", result.getImageID());
+                }
+                else
+                    reply.put(TAG_ERROR, "Exercise with id " + exerciseID + " was not found!");
+                
+                
                 sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
             }
             else {

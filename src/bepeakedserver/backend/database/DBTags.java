@@ -7,20 +7,26 @@ package bepeakedserver.backend.database;
  */
 public class DBTags 
 {
-    protected static final String USER_ID = "PerformanceID";
-    protected static final String USER_SALT = "us_salt";
-    protected static final String USER_VALIDATION = "validation";
+    public static final String USER_ID = "us_id";
+    public static final String USER_SALT = "us_salt";
+    public static final String USER_TYPE = "us_type_id";
     
-    protected static final String EXERCISE_ID = "ex_id";
-    protected static final String EXERCISE_NAME = "ex_name";
-    protected static final String EXERCISE_DESCRIPTION = "description";
-    protected static final String EXERCISE_IMAGEID = "ex_image";
+    public static final String EXERCISE_ID = "ex_id";
+    public static final String EXERCISE_NAME = "ex_name";
+    public static final String EXERCISE_DESCRIPTION = "description";
+    public static final String EXERCISE_IMAGEID = "ex_image";
     
-    protected static final String REPS = "Reps";
-    protected static final String WEIGHT = "Weigth";
-    protected static final String DATE = "Datetime";
+    public static final String VALIDATION = "validation";
+    public static final String WEIGHT = "Weigth";
+    public static final String DATE = "Datetime";
     
-    protected static final String WORKOUT_ID = "wk_id";
-    protected static final String WORKOUT_NAME = "wk_name";
-    protected static final String WORKOUT_SETS = "sets";
+    public static final String WORKOUT_ID = "wk_id";
+    public static final String WORKOUT_NAME = "wk_name";
+    public static final String WORKOUT_SETS = "sets";
+    public static final String WORKOUT_REPS = "reps";
+    
+    public static final String DIETPLAN_PROT = "dp_protein";
+    public static final String DIETPLAN_CAL = "dp_calories";
+    public static final String DIETPLAN_CUL = "dp_culhydrates";
+    public static final String DIETPLAN_FAT = "dp_fat";
 }
