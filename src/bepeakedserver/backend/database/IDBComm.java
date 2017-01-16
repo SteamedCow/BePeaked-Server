@@ -14,7 +14,7 @@ import java.util.HashMap;
  */
 public interface IDBComm 
 {
-    public void createUser(String firstName, String lastName, String nickName, String passHash, String salt) throws ConnectException;
+    public void createUser(String firstName, String lastName, String nickName, String passHash, String salt, String email) throws ConnectException;
     
     public void updatePassword(String nickName, String newHashedPassword) throws ConnectException;
     
@@ -30,9 +30,9 @@ public interface IDBComm
     
 //    public ArrayList<Result> getResults(int userID, int exerciseID) throws ConnectException;
     
-    public HashMap<Integer, String> getWorkoutlist() throws ConnectException;
+    public HashMap<Integer, String> getWorkoutlist(int userID) throws ConnectException;
     
-    public ArrayList<Exercise> getExerciseByWorkoutID(int workoutID) throws ConnectException;
+    public ArrayList<Exercise> getExerciseByWorkoutID(int userID, int workoutID) throws ConnectException;
     
     public Exercise getExercise(int exerciseID) throws ConnectException;
 }

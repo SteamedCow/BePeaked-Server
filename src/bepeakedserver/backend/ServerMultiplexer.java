@@ -130,8 +130,9 @@ public class ServerMultiplexer implements IMultiplexer
                         String nickName = (String) jsonArr.get(3);
                         String passHash = (String) jsonArr.get(4);
                         String salt = (String) jsonArr.get(5);
+                        String email = (String) jsonArr.get(6);
                         
-                        createUser(socket, firstName, lastName, nickName, passHash, salt);
+                        createUser(socket, firstName, lastName, nickName, passHash, salt, email);
                         break;
                     }
                     default:
@@ -165,15 +166,17 @@ public class ServerMultiplexer implements IMultiplexer
                     }
                     case TAG_WORKOUTLIST: {
                         String sessionID = (String) jsonObj.get(TAG_CMD_SESSION_ID);
+                        int userID = (int) (long) jsonArr.get(1);
                         
-                        getWorkoutList(socket, sessionID);
+                        getWorkoutList(socket, userID, sessionID);
                         break;
                     }
                     case TAG_EXERCISELIST: {
                         String sessionID = (String) jsonObj.get(TAG_CMD_SESSION_ID);
-                        int workoutID = (int) (long) jsonArr.get(1);
+                        int userID = (int) (long) jsonArr.get(1);
+                        int workoutID = (int) (long) jsonArr.get(2);
                         
-                        getExercises(socket, workoutID, sessionID);
+                        getExercises(socket, userID, workoutID, sessionID);
                         break;
                     }
                     case TAG_EXERCISE: {
@@ -245,10 +248,10 @@ public class ServerMultiplexer implements IMultiplexer
         }
     }
 
-    private void createUser(Socket socket, String firstName, String lastName, String nickName, String passHash, String salt) {
+    private void createUser(Socket socket, String firstName, String lastName, String nickName, String passHash, String salt, String email) {
         DBCommImpl db = new DBCommImpl(new MySQLFactory(BackendData.DB_URL, BackendData.DB_SCHEMA, BackendData.DB_USERNAME, BackendData.DB_PASSWORD));
         try {
-            db.createUser(firstName, lastName, nickName, passHash, salt);
+            db.createUser(firstName, lastName, nickName, passHash, salt, email);
             JSONObject reply = new JSONObject();
             
             reply.put(TAG_ERROR, TAG_ERROR_NONE);
@@ -337,13 +340,13 @@ public class ServerMultiplexer implements IMultiplexer
         }
     }
 
-    private void getWorkoutList(Socket socket, String sessionID) {
+    private void getWorkoutList(Socket socket, int userID, String sessionID) {
         DBCommImpl db = new DBCommImpl(new MySQLFactory(BackendData.DB_URL, BackendData.DB_SCHEMA, BackendData.DB_USERNAME, BackendData.DB_PASSWORD));
         try {
             if(Sessions.containsSession(sessionID)) {
                 Sessions.updateSessionTimestamp(sessionID, new Date().getTime());
                 
-                HashMap<Integer, String> results = db.getWorkoutlist();
+                HashMap<Integer, String> results = db.getWorkoutlist(userID);
                 
                 JSONObject reply = new JSONObject();
                 JSONArray workoutlist = new JSONArray();
@@ -369,13 +372,13 @@ public class ServerMultiplexer implements IMultiplexer
         }
     }
 
-    private void getExercises(Socket socket, int workoutID, String sessionID) {
+    private void getExercises(Socket socket, int userID, int workoutID, String sessionID) {
         DBCommImpl db = new DBCommImpl(new MySQLFactory(BackendData.DB_URL, BackendData.DB_SCHEMA, BackendData.DB_USERNAME, BackendData.DB_PASSWORD));
         try {
             if(Sessions.containsSession(sessionID)) {
                 Sessions.updateSessionTimestamp(sessionID, new Date().getTime());
                 
-                ArrayList<Exercise> results = db.getExerciseByWorkoutID(workoutID);
+                ArrayList<Exercise> results = db.getExerciseByWorkoutID(userID, workoutID);
                 
                 JSONObject reply = new JSONObject();
                 JSONArray exercises = new JSONArray();

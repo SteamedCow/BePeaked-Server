@@ -24,9 +24,9 @@ public class DBCommImpl implements IDBComm
     }
 
     @Override
-    public void createUser(String firstName, String lastName, String nickName, String passHash, String salt) throws ConnectException {
+    public void createUser(String firstName, String lastName, String nickName, String passHash, String salt, String email) throws ConnectException {
         Connection con = null;
-        String query = "CALL `bepeakedwebserver_com_db`.`create_user`(?,?,?,?,?)";
+        String query = "CALL `bepeakedwebserver_com_db`.`create_user`(?,?,?,?,?,?)";
         
         try {
             con = db.createConnection();
@@ -36,6 +36,7 @@ public class DBCommImpl implements IDBComm
                 ps.setString(3, nickName);
                 ps.setString(4, passHash);
                 ps.setString(5, salt);
+                ps.setString(6, email);
                 
                 ResultSet rs = ps.executeQuery();
                 System.out.println(rs);
@@ -274,14 +275,16 @@ public class DBCommImpl implements IDBComm
 //    }
 
     @Override
-    public HashMap<Integer, String> getWorkoutlist() throws ConnectException {
+    public HashMap<Integer, String> getWorkoutlist(int userID) throws ConnectException {
         HashMap<Integer, String> result = new HashMap<>();
         Connection con = null;
-        String query = "CALL `bepeakedwebserver_com_db`.`get_workoutlist`()";
+        String query = "CALL `bepeakedwebserver_com_db`.`get_workoutlist`(?)";
         
         try {
             con = db.createConnection();
             try (PreparedStatement ps = con.prepareStatement(query)) {
+                ps.setInt(1, userID);
+                
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
                     int id = rs.getInt(DBTags.WORKOUT_ID);
@@ -309,15 +312,16 @@ public class DBCommImpl implements IDBComm
     }
 
     @Override
-    public ArrayList<Exercise> getExerciseByWorkoutID(int workoutID) throws ConnectException {
+    public ArrayList<Exercise> getExerciseByWorkoutID(int userID, int workoutID) throws ConnectException {
         ArrayList<Exercise> result = new ArrayList<>();
         Connection con = null;
-        String query = "CALL `bepeakedwebserver_com_db`.`getExerciseByWorkout`(?)";
+        String query = "CALL `bepeakedwebserver_com_db`.`getExerciseByWorkout`(?, ?)";
         
         try {
             con = db.createConnection();
             try (PreparedStatement ps = con.prepareStatement(query)) {
-                ps.setInt(1, workoutID);
+                ps.setInt(1, userID);
+                ps.setInt(2, workoutID);
                 
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
