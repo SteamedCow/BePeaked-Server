@@ -3,6 +3,7 @@ package bepeakedserver.backend.database;
 import bepeakedserver.model.DietPlanProfile;
 import bepeakedserver.model.Exercise;
 import bepeakedserver.model.Result;
+import bepeakedserver.model.UserProfile;
 import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,6 +20,8 @@ public interface IDBComm
     public void updatePassword(String nickName, String newHashedPassword) throws ConnectException;
     
     public int getUserType(int userID) throws ConnectException;
+    
+    public UserProfile getUserProfile(int userID) throws ConnectException;
     
     public DietPlanProfile getDietPlanProfile(int userID) throws ConnectException;
     

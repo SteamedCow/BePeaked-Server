@@ -8,6 +8,7 @@ import bepeakedserver.backend.database.DBTags;
 import bepeakedserver.backend.database.MySQLFactory;
 import bepeakedserver.model.DietPlanProfile;
 import bepeakedserver.model.Exercise;
+import bepeakedserver.model.UserProfile;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -38,6 +39,7 @@ public class ServerMultiplexer implements IMultiplexer
     private static final String TAG_ARGS = "args";
     private static final String TAG_USER = "user";
     private static final String TAG_USER_TYPE = "us_type";
+    private static final String TAG_USER_PROFILE = "us_profile";
     private static final String TAG_DIETPLAN = "us_dp";
     private static final String TAG_WORKOUTLIST = "workouts";
     private static final String TAG_PASSWORD = "password";
@@ -157,6 +159,13 @@ public class ServerMultiplexer implements IMultiplexer
                         getUserType(socket, userID, sessionID);
                         break;
                     }
+                    case TAG_USER_PROFILE: {
+                        String sessionID = (String) jsonObj.get(TAG_CMD_SESSION_ID);
+                        int userID = (int) (long) jsonArr.get(1);
+                        
+                        getUserProfile(socket, userID, sessionID);
+                        break;
+                    }
                     case TAG_DIETPLAN: {
                         String sessionID = (String) jsonObj.get(TAG_CMD_SESSION_ID);
                         int userID = (int) (long) jsonArr.get(1);
@@ -264,6 +273,42 @@ public class ServerMultiplexer implements IMultiplexer
             reply.put(TAG_ERROR, e);
             
             sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
+        }
+    }
+    
+    private void getUserProfile(Socket socket, int userID, String sessionID) {
+        DBCommImpl db = new DBCommImpl(new MySQLFactory(BackendData.DB_URL, BackendData.DB_SCHEMA, BackendData.DB_USERNAME, BackendData.DB_PASSWORD));
+        try {
+            if(Sessions.containsSession(sessionID)) {
+                Sessions.updateSessionTimestamp(sessionID, new Date().getTime());
+                
+                JSONObject reply = new JSONObject();
+                UserProfile result = db.getUserProfile(userID);
+                if(result != null) {
+                    reply.put("first", result.getFirstName());
+                    reply.put("last", result.getLastName());
+                    reply.put("age", result.getAge());
+                    reply.put("height", result.getHeight());
+                    reply.put("weight", result.getWeight());
+                    reply.put("prot", result.getProt());
+                    reply.put("cal", result.getCal());
+                    reply.put("col", result.getCol());
+                    reply.put("fat", result.getFat());
+                    reply.put("dpid", result.getDietplanID());
+                }
+                else
+                    reply.put(TAG_ERROR, "User prfole for user id " + userID + " was not found!");
+                
+                
+                sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
+            }
+            else {
+                JSONObject reply = new JSONObject();
+                reply.put(TAG_ERROR, "Invalid session id");
+                sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
+            }
+        } catch (ConnectException e) {
+            e.printStackTrace();
         }
     }
 
@@ -390,6 +435,7 @@ public class ServerMultiplexer implements IMultiplexer
                     jsonResult.put("description", exercise.getDescription());
                     jsonResult.put("imageID", exercise.getImageID());
                     jsonResult.put("sets", exercise.getSets());
+                    jsonResult.put("reps", exercise.getReps());
                     jsonResult.put(DBTags.WORKOUT_REPS, exercise.getReps());
                     exercises.add(jsonResult);
                 }

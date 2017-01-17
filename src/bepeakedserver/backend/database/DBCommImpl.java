@@ -2,6 +2,7 @@ package bepeakedserver.backend.database;
 
 import bepeakedserver.model.DietPlanProfile;
 import bepeakedserver.model.Exercise;
+import bepeakedserver.model.UserProfile;
 import java.net.ConnectException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -138,7 +139,6 @@ public class DBCommImpl implements IDBComm
                 ps.setInt(1, userID);
                 
                 System.out.println("PS=" + ps);
-                
                 try (ResultSet rs = ps.executeQuery()) {
                     rs.next();
                     userType = rs.getInt(DBTags.USER_TYPE);
@@ -159,6 +159,40 @@ public class DBCommImpl implements IDBComm
             }
         }
         return userType;
+    }
+
+    @Override
+    public UserProfile getUserProfile(int userID) throws ConnectException {
+        UserProfile result = null;
+        Connection con = null;
+        String query = "CALL `bepeakedwebserver_com_db`.`get_user_profile`(?)";
+        
+        try {
+            con = db.createConnection();
+            try (PreparedStatement ps = con.prepareStatement(query)) {
+                ps.setInt(1, userID);
+                
+                System.out.println("PS=" + ps);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if(rs.next())
+                        result = createUserProfile(rs);
+                }
+            }
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        } 
+        finally {
+            if(con != null) {
+                try {
+                    con.close();
+                } 
+                catch (SQLException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        }
+        return result;
     }
 
     @Override
@@ -323,6 +357,7 @@ public class DBCommImpl implements IDBComm
                 ps.setInt(1, userID);
                 ps.setInt(2, workoutID);
                 
+                System.out.println("PS=" + ps);
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
                     Exercise element = createExerciseElement(rs);
@@ -429,6 +464,7 @@ public class DBCommImpl implements IDBComm
         String name = rs.getString(DBTags.EXERCISE_NAME);
         String description = rs.getString(DBTags.EXERCISE_DESCRIPTION);
         int imageID = rs.getInt(DBTags.EXERCISE_IMAGEID);
+        
         int sets = rs.getInt(DBTags.WORKOUT_SETS);
         String reps = rs.getString(DBTags.WORKOUT_REPS);
         
@@ -442,5 +478,22 @@ public class DBCommImpl implements IDBComm
         double fat = rs.getDouble(DBTags.DIETPLAN_FAT);
         
         return new DietPlanProfile(protein, calories, culhydrates, fat);
+    }
+
+    private UserProfile createUserProfile(ResultSet rs) throws SQLException {
+        String firstName = rs.getString(DBTags.USER_FIRSTNAME);
+        String lastName = rs.getString(DBTags.USER_LASTNAME);
+        
+        int age = rs.getInt(DBTags.USERPROFILE_AGE);
+        double height = rs.getDouble(DBTags.USERPROFILE_HEIGHT);
+        double weight = rs.getDouble(DBTags.USERPROFILE_WEIGHT);
+        
+        double protein = rs.getDouble(DBTags.DIETPLAN_PROT);
+        double calories = rs.getDouble(DBTags.DIETPLAN_CAL);
+        double culhydrates = rs.getDouble(DBTags.DIETPLAN_CUL);
+        double fat = rs.getDouble(DBTags.DIETPLAN_FAT);
+        int dpid = rs.getInt(DBTags.DIETPLAN_ID);
+        
+        return new UserProfile(firstName, lastName, age, height, weight, protein, calories, culhydrates, fat, dpid);
     }
 }

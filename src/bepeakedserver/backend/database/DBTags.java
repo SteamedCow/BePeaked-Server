@@ -10,6 +10,12 @@ public class DBTags
     public static final String USER_ID = "us_id";
     public static final String USER_SALT = "us_salt";
     public static final String USER_TYPE = "us_type_id";
+    public static final String USER_FIRSTNAME = "us_first_name";
+    public static final String USER_LASTNAME = "us_last_name";
+    
+    public static final String USERPROFILE_HEIGHT = "up_height";
+    public static final String USERPROFILE_WEIGHT = "up_weight";
+    public static final String USERPROFILE_AGE = "up_age";
     
     public static final String EXERCISE_ID = "ex_id";
     public static final String EXERCISE_NAME = "ex_name";
@@ -25,6 +31,7 @@ public class DBTags
     public static final String WORKOUT_SETS = "sets";
     public static final String WORKOUT_REPS = "reps";
     
+    public static final String DIETPLAN_ID = "dp_id";
     public static final String DIETPLAN_PROT = "dp_protein";
     public static final String DIETPLAN_CAL = "dp_calories";
     public static final String DIETPLAN_CUL = "dp_culhydrates";
