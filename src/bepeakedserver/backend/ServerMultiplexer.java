@@ -270,7 +270,7 @@ public class ServerMultiplexer implements IMultiplexer
             e.printStackTrace();
             JSONObject reply = new JSONObject();
             
-            reply.put(TAG_ERROR, e);
+            reply.put(TAG_ERROR, e.getMessage());
             
             sendText(socket, BackendData.CHARSET_ENCODING, reply.toJSONString());
         }
